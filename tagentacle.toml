@@ -1,0 +1,12 @@
+[package]
+name = "example_inference"
+version = "0.1.0"
+description = "Stateless LLM inference gateway — exposes /inference/chat Service"
+authors = ["Tagentacle Contributors"]
+type = "executable"
+
+[entry_points]
+node = "inference:main"
+
+[dependencies]
+python = ["openai"]
