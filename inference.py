@@ -31,14 +31,20 @@ async def main():
 
     # --- Resolve credentials ---
     api_key = node.secrets.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY", "")
-    base_url = node.secrets.get("OPENAI_BASE_URL") or os.environ.get("OPENAI_BASE_URL") or None
+    base_url = (
+        node.secrets.get("OPENAI_BASE_URL") or os.environ.get("OPENAI_BASE_URL") or None
+    )
 
     if not api_key:
-        logger.warning("OPENAI_API_KEY not set — inference calls will fail. "
-                       "Set it in secrets.toml or as an environment variable.")
+        logger.warning(
+            "OPENAI_API_KEY not set — inference calls will fail. "
+            "Set it in secrets.toml or as an environment variable."
+        )
 
     client = AsyncOpenAI(api_key=api_key, base_url=base_url)
-    logger.info(f"Inference Node ready. base_url={base_url or 'https://api.openai.com/v1'}")
+    logger.info(
+        f"Inference Node ready. base_url={base_url or 'https://api.openai.com/v1'}"
+    )
 
     @node.service("/inference/chat")
     async def handle_chat(payload: dict) -> dict:
@@ -91,13 +97,17 @@ async def main():
             kwargs["tools"] = tools
 
         try:
-            logger.info(f"Calling LLM: model={model}, messages_count={len(messages)}, "
-                        f"tools_count={len(tools) if tools else 0}")
+            logger.info(
+                f"Calling LLM: model={model}, messages_count={len(messages)}, "
+                f"tools_count={len(tools) if tools else 0}"
+            )
             completion = await client.chat.completions.create(**kwargs)
 
             # Convert pydantic model to plain dict for bus serialization
             result = completion.model_dump(exclude_none=True)
-            logger.info(f"LLM response: finish_reason={result['choices'][0].get('finish_reason')}")
+            logger.info(
+                f"LLM response: finish_reason={result['choices'][0].get('finish_reason')}"
+            )
             return result
 
         except Exception as e:
