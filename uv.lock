@@ -64,7 +64,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "openai", specifier = ">=1.0" },
-    { name = "tagentacle-py-core", editable = "../python-sdk-core" },
+    { name = "tagentacle-py-core", editable = "../tagentacle-py-core" },
 ]
 
 [[package]]
@@ -385,8 +385,12 @@ wheels = [
 
 [[package]]
 name = "tagentacle-py-core"
-version = "0.1.0"
-source = { editable = "../python-sdk-core" }
+version = "0.3.0"
+source = { editable = "../tagentacle-py-core" }
+
+[package.metadata]
+requires-dist = [{ name = "jsonschema", marker = "extra == 'validation'", specifier = ">=4.0" }]
+provides-extras = ["validation"]
 
 [[package]]
 name = "tqdm"

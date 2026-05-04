@@ -7,14 +7,20 @@ and proxies to any OpenAI-compatible LLM API (OpenAI, DeepSeek, OpenRouter, Olla
 The node is stateless — it holds no conversation history.
 Context management is the Agent Node's responsibility.
 
-Environment / Secrets:
+Required configuration (from secrets.toml or environment):
     OPENAI_API_KEY  — API key for the LLM provider
-    OPENAI_BASE_URL — (optional) override endpoint, e.g. https://openrouter.ai/api/v1
+    OPENAI_BASE_URL — endpoint, e.g. https://api.openai.com/v1
+                      or https://openrouter.ai/api/v1
+
+Both are REQUIRED with no default — the node refuses to start if either
+is missing. This is deliberate: a default endpoint silently routes
+traffic to the wrong provider when an operator forgets to configure it.
 """
 
 import asyncio
 import logging
 import os
+import sys
 
 from openai import AsyncOpenAI
 from tagentacle_py_core import Node
@@ -29,22 +35,28 @@ async def main():
     node = Node("inference_node")
     await node.connect()
 
-    # --- Resolve credentials ---
+    # --- Resolve credentials (no defaults; missing = fail-fast) ---
     api_key = node.secrets.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY", "")
     base_url = (
-        node.secrets.get("OPENAI_BASE_URL") or os.environ.get("OPENAI_BASE_URL") or None
+        node.secrets.get("OPENAI_BASE_URL") or os.environ.get("OPENAI_BASE_URL") or ""
     )
 
-    if not api_key:
-        logger.warning(
-            "OPENAI_API_KEY not set — inference calls will fail. "
-            "Set it in secrets.toml or as an environment variable."
+    missing = [
+        k
+        for k, v in (("OPENAI_API_KEY", api_key), ("OPENAI_BASE_URL", base_url))
+        if not v
+    ]
+    if missing:
+        logger.error(
+            "Missing required secrets: %s. "
+            "Set them in config/secrets.toml or as environment variables. "
+            "No default endpoint is provided to prevent silent misrouting.",
+            ", ".join(missing),
         )
+        sys.exit(2)
 
     client = AsyncOpenAI(api_key=api_key, base_url=base_url)
-    logger.info(
-        f"Inference Node ready. base_url={base_url or 'https://api.openai.com/v1'}"
-    )
+    logger.info(f"Inference Node ready. base_url={base_url}")
 
     @node.service("/inference/chat")
     async def handle_chat(payload: dict) -> dict:
